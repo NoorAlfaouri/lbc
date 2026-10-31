@@ -1,0 +1,19 @@
+# Build artifacts
+/lbc
+*.o
+*.a
+*.so
+*.dylib
+*.dll
+*.lbc
+lbc-test-artifacts/
+
+# Python packaging artifacts
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.pyc
+
+# Scratch & local logs
+scratch/

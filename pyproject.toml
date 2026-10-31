@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lbc-codec"
+version = "1.0.0"
+description = "LBC (Lossless Block Codec) - Ultra High-Ratio Compression Engine"
+readme = "README.md"
+requires-python = ">=3.7"
+license = "MIT"
+authors = [{name = "LBC Contributors"}]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: C",
+    "Programming Language :: Python :: 3",
+    "Topic :: System :: Archiving :: Compression"
+]
+
+[project.scripts]
+lbc = "lbc:main"

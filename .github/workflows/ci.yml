@@ -1,0 +1,58 @@
+name: CI & Packaging
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test-c:
+    name: C Test Suite (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build & Run C Tests
+        run: |
+          make clean
+          make test
+          make all
+      - name: Test CLI
+        run: |
+          ./lbc --help
+          ./lbc -9 README.md -o readme.lbc
+          ./lbc -t readme.lbc
+          ./lbc -d readme.lbc -o readme.restored
+          cmp README.md readme.restored
+
+  test-python:
+    name: Python Package (${{ matrix.os }}, py${{ matrix.python-version }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: ["3.8", "3.9", "3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install build tools
+        run: pip install --upgrade setuptools wheel build
+      - name: Build Wheel & Install
+        run: |
+          pip install .
+          lbc --help
+      - name: Test Python Library
+        run: |
+          python -c "
+          import lbc
+          msg = b'Test context mixing lossless compression roundtrip.' * 20
+          compressed = lbc.compress(msg)
+          assert lbc.decompress(compressed) == msg
+          print('Passed! Ratio:', len(compressed) / len(msg))
+          "
