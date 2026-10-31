@@ -1,7 +1,7 @@
 #!/bin/sh
 # LBC (Lossless Block Codec) Installer
 # Install on any Linux / macOS / BSD system:
-#   curl -fsSL https://raw.githubusercontent.com/NoorAlfaouri/lbc/master/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/NoorAlfaouri/lbc/main/install.sh | bash
 
 set -eu
 

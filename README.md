@@ -42,7 +42,7 @@ Provides the `lbc` terminal command and the `import lbc` Python library.
 
 ### Option 2: One-Line Installer (Linux / macOS / BSD)
 ```sh
-curl -fsSL https://raw.githubusercontent.com/NoorAlfaouri/lbc/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/NoorAlfaouri/lbc/main/install.sh | bash
 ```
 
 ### Option 3: Compile from Source (C11)
