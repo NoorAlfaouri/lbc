@@ -6,6 +6,7 @@
 *.dylib
 *.dll
 *.lbc
+!tests/fixtures/*.lbc
 lbc-test-artifacts/
 
 # Python packaging artifacts

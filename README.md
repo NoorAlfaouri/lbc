@@ -84,6 +84,13 @@ make test
 
 The test script checks a SHA-256 known-answer vector and cross-checks SHA-256 with `sha256sum`. It exercises exact roundtrips of repeated shell text, repeated source-like lines, NUL/0xff-containing binary data, deterministic arbitrary data, partial and empty files; checks version-3 LZ and BWT archive fixtures plus older frames; and rejects malformed headers, a noncanonical frequency, and a corrupted digest. The source-like fixture compresses 1,500,000 repeated bytes to 204 bytes (99.9864% reduction) with a 4 MiB chunk; Zstandard `-3` compressed the same fixture to 248 bytes in the reproducible benchmark. The binary fixture compresses 90,000 repeated bytes to 103 bytes (99.8856%). These deliberately repetitive fixtures are not representative natural code. To test an existing real file without adding it to the repository, set `LBC_TEST_SOURCE=/path/to/file` and `LBC_TEST_MAX_ARCHIVE_BYTES=N` for `make test`; the test compares the restored bytes with that file.
 
+## Acknowledgments & Prior Art
+
+LBC is a clean-room, from-scratch C11 implementation. We gratefully acknowledge foundational algorithmic concepts that inspired parts of our compression models:
+- **Matt Mahoney & Byron Knoll**: Pioneering research on Context Mixing, Adaptive Probability Maps (APM), and the `cmix` / `PAQ` compression architectures.
+- **Igor Pavlov**: LZMA architecture, repeat match distance coding, and the BCJ branch call filter.
+- **Burrows & Wheeler**: The Burrows-Wheeler Transform (BWT).
+
 ### License
 
-MIT License. Open source and free for commercial and private use.
+MIT License (c) 2026 NoorAlfaouri. Open source and free for commercial and private use. See [LICENSE](LICENSE) for details.
