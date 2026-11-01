@@ -27,6 +27,12 @@ jobs:
           ./lbc -t readme.lbc
           ./lbc -d readme.lbc -o readme.restored
           cmp README.md readme.restored
+      - name: Build Debian Package (.deb)
+        if: matrix.os == 'ubuntu-latest'
+        run: |
+          make deb
+          sudo apt install -y ./dist/lbc_*.deb
+          lbc --help
 
   test-python:
     name: Python Package (${{ matrix.os }}, py${{ matrix.python-version }})

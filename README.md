@@ -38,12 +38,19 @@ The decoder is heavily optimized for throughput:
 ```sh
 pip install git+https://github.com/NoorAlfaouri/lbc.git
 ```
-Provides the `lbc` terminal command and the `import lbc` Python library.
+### Option 1: Native Debian / Ubuntu Package (`apt` / `dpkg`)
+```sh
+# Build and install directly via apt
+make deb
+sudo apt install ./dist/lbc_*.deb
+```
 
-### Option 2: One-Line Installer (Linux / macOS / BSD)
+### Option 2: Universal One-Line Installer (Linux / macOS / BSD / Termux)
+Works on any terminal, installs standard binary to `/usr/local/bin` (or `~/.local/bin`):
 ```sh
 curl -fsSL https://raw.githubusercontent.com/NoorAlfaouri/lbc/main/install.sh | bash
 ```
+Once installed, the `lbc` command is instantly available from any folder globally.
 
 ### Option 3: Compile from Source (C11)
 ```sh
@@ -51,6 +58,11 @@ git clone https://github.com/NoorAlfaouri/lbc.git
 cd lbc
 make
 sudo make install
+```
+
+### Option 4: Via Python Package (`pip`)
+```sh
+pip install git+https://github.com/NoorAlfaouri/lbc.git
 ```
 
 ## Build and test
