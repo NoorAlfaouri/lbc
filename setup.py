@@ -4,7 +4,7 @@ clbc = Extension(
     "lbc._clbc",
     sources=["py_lbc.c", "lbc.c"],
     include_dirs=["."],
-    extra_compile_args=["-O3", "-std=c11", "-D_POSIX_C_SOURCE=200809L", "-DLBC_CLI_NAME=lbc_cli_main"],
+    extra_compile_args=["-O3", "-std=c11", "-D_POSIX_C_SOURCE=200809L", "-DLBC_CLI_NAME=lbc_cli_main", "-pthread"],
 )
 
 setup(
@@ -13,7 +13,8 @@ setup(
     description="LBC (Lossless Block Codec) - Ultra High-Ratio Compression Engine",
     long_description=open("README.md", encoding="utf-8").read(),
     long_description_content_type="text/markdown",
-    author="LBC Contributors",
+    author="NoorAlfaouri",
+    author_email="alfaouri1112@gmail.com",
     license="MIT",
     packages=["lbc"],
     package_dir={"": "python"},

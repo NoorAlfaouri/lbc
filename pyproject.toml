@@ -8,8 +8,8 @@ version = "1.0.0"
 description = "LBC (Lossless Block Codec) - Ultra High-Ratio Compression Engine"
 readme = "README.md"
 requires-python = ">=3.7"
-license = "MIT"
-authors = [{name = "LBC Contributors"}]
+license = { text = "MIT" }
+authors = [{name = "NoorAlfaouri", email = "alfaouri1112@gmail.com"}]
 classifiers = [
     "Development Status :: 5 - Production/Stable",
     "Intended Audience :: Developers",

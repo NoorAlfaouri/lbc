@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <setjmp.h>
 #include <utime.h>
+#include <pthread.h>
 #include "lbc.h"
 
 #define MIB (1024ULL * 1024ULL)
@@ -242,6 +243,8 @@ static char *temp_name(const char *output, const char *kind) {
 }
 
 static FILE *create_temp(const char *output, const char *kind, char **path_out) {
+    if (owned_count >= sizeof(owned_paths) / sizeof(owned_paths[0]))
+        fail("too many temporary files");
     char *path = temp_name(output, kind);
     int fd = open(path, O_CREAT | O_EXCL | O_RDWR, 0600);
     if (fd < 0) {
@@ -257,6 +260,9 @@ static FILE *create_temp(const char *output, const char *kind, char **path_out) 
         errno = saved;
         fail_errno("opening temporary stream");
     }
+    if (api_tracking) {
+        api_track_stream(stream);
+    }
     register_owned(path);
     *path_out = path;
     return stream;
@@ -265,8 +271,10 @@ static FILE *create_temp(const char *output, const char *kind, char **path_out) 
 static void copy_and_unlink(const char *src, const char *dst) {
     FILE *in = fopen(src, "rb");
     if (!in) fail_errno("opening source for copy");
-    FILE *out = fopen(dst, "wb");
-    if (!out) { fclose(in); fail_errno("opening destination for copy"); }
+    int fd = open(dst, O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    if (fd < 0) { fclose(in); fail_errno("opening destination for copy"); }
+    FILE *out = fdopen(fd, "wb");
+    if (!out) { (void)close(fd); fclose(in); fail_errno("opening destination stream for copy"); }
     char buf[65536];
     size_t n;
     while ((n = fread(buf, 1, sizeof(buf), in)) > 0) {
@@ -276,10 +284,14 @@ static void copy_and_unlink(const char *src, const char *dst) {
         }
     }
     if (ferror(in)) { fclose(in); fclose(out); (void)remove(dst); fail_errno("reading source copy"); }
-    if (fflush(out) != 0 || fsync(fileno(out)) != 0 || fclose(out) != 0) {
-        fclose(in); (void)remove(dst); fail_errno("flushing destination copy");
-    }
+    int flush_err = (fflush(out) != 0);
+    int sync_err = (fsync(fileno(out)) != 0);
+    int close_err = (fclose(out) != 0);
     fclose(in);
+    if (flush_err || sync_err || close_err) {
+        (void)remove(dst);
+        fail_errno("flushing destination copy");
+    }
     (void)remove(src);
 }
 
@@ -305,7 +317,7 @@ static void publish_temp(FILE *stream, char *temporary, const char *output) {
         }
     } else {
         struct stat st;
-        if (stat(output, &st) == 0) {
+        if (lstat(output, &st) == 0) {
             fail("existing output file");
         }
         if (rename(temporary, output) != 0) {
@@ -481,7 +493,8 @@ static void verify_new_output(const char *path) {
     if (opt_test) return;
     if (path == NULL) return;
     if (opt_force) return;
-    if (access(path, F_OK) == 0) {
+    struct stat st;
+    if (lstat(path, &st) == 0) {
         if (api_tracking) api_status = LBC_ERROR_EXISTS;
         fail("refusing to overwrite an existing output file");
     }
@@ -1975,21 +1988,21 @@ typedef struct {
 } CMixMathTables;
 
 static CMixMathTables g_cmix_tabs;
-static volatile int g_cmix_tabs_inited = 0;
+static pthread_once_t g_cmix_once = PTHREAD_ONCE_INIT;
 
-static void cmix_init_math_tables(void) {
-    if (__atomic_load_n(&g_cmix_tabs_inited, __ATOMIC_ACQUIRE)) return;
-    CMixMathTables tabs;
+static void cmix_init_math_tables_impl(void) {
     int pi = 0;
     for (int x = -2047; x <= 2047; ++x) {
         int v = lbc_isquash(x);
-        for (int j = pi; j <= v; ++j) tabs.stretch[j] = (int16_t)x;
+        for (int j = pi; j <= v; ++j) g_cmix_tabs.stretch[j] = (int16_t)x;
         pi = v + 1;
     }
-    for (int j = pi; j < 4096; ++j) tabs.stretch[j] = 2047;
-    for (int n = 0; n < 1024; ++n) tabs.rate[n] = 131072 / (2 * n + 3);
-    memcpy(&g_cmix_tabs, &tabs, sizeof(tabs));
-    __atomic_store_n(&g_cmix_tabs_inited, 1, __ATOMIC_RELEASE);
+    for (int j = pi; j < 4096; ++j) g_cmix_tabs.stretch[j] = 2047;
+    for (int n = 0; n < 1024; ++n) g_cmix_tabs.rate[n] = 131072 / (2 * n + 3);
+}
+
+static void cmix_init_math_tables(void) {
+    (void)pthread_once(&g_cmix_once, cmix_init_math_tables_impl);
 }
 
 static inline uint32_t cmix_hash(uint32_t a, uint32_t b, uint32_t c) {
@@ -3703,6 +3716,7 @@ lbc_status lbc_compress(const void *input, size_t n, size_t chunk, void **out, s
     if (out_n) *out_n = 0;
     if (!out || !out_n || (!input && n) || chunk == 0 || chunk > UINT32_MAX) return LBC_ERROR_ARGUMENT;
     if (n > LBC_MAX_INPUT_BYTES) return LBC_ERROR_LIMIT;
+    opt_force = 0; opt_test = 0; opt_level = 9;
     jmp_buf env; api_tracking = 1; api_jump = &env; api_status = LBC_ERROR_INTERNAL; quiet_api = 1; lbc_status s = LBC_OK;
     if (setjmp(env) != 0) { cleanup_api_resources(); api_jump = NULL; quiet_api = 0; return (lbc_status)api_status; }
     char *src = api_temp_path(), *dst = api_temp_path();
@@ -3718,6 +3732,7 @@ lbc_status lbc_decompress(const void *archive, size_t n, void **out, size_t *out
     if (out_n) *out_n = 0;
     if (!out || !out_n || (!archive && n)) return LBC_ERROR_ARGUMENT;
     if (n > LBC_MAX_INPUT_BYTES) return LBC_ERROR_LIMIT;
+    opt_force = 0; opt_test = 0; opt_level = 9;
     jmp_buf env; api_tracking = 1; api_jump = &env; api_status = LBC_ERROR_INTERNAL; quiet_api = 1; lbc_status s = LBC_OK;
     if (setjmp(env) != 0) { cleanup_api_resources(); api_jump = NULL; quiet_api = 0; return (lbc_status)api_status; }
     char *src = api_temp_path(), *dst = api_temp_path();

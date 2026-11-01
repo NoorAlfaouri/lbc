@@ -1,5 +1,5 @@
 CC ?= cc
-CFLAGS ?= -O3 -std=c11 -Wall -Wextra -Werror -pedantic
+CFLAGS ?= -O3 -std=c11 -Wall -Wextra -Werror -pedantic -pthread
 CPPFLAGS ?= -D_POSIX_C_SOURCE=200809L
 
 PREFIX ?= /usr/local
